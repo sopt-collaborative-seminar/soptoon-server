@@ -47,26 +47,37 @@ router.get('/:episodeIdx', async(req, res) => {
 });
 
 // 에피소드 생성
-router.post('/', upload.single('img'), (req, res) => {
-    const {webtoonIdx, title} = req.body;
+router.post('/', upload.fields([{name: 'img'}, {name: 'cuts'}]), (req, res) => {
+    const {webtoonIdx,title} = req.body;
 
-    // webtoonIdx, title, comment, img 중 하나라도 없으면 에러 응답
-    if(!webtoonIdx || !title || !req.file){
+    // webtoonIdx, title, comment, img, cuts 중 하나라도 없으면 에러 응답
+    if (!webtoonIdx || !title || !req.files.img || !req.files.cuts || req.files.cuts.length === 0) {
         console.log(`webtoonIdx : ${webtoonIdx}`);
         console.log(`title : ${title}`);
-        console.log(`req.img : ${req.file}`);
+        console.log(`req.files : ${req.files}`);
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
     }
 
-    const imgUrl = req.file.location;
+    const imgUrl = req.files.img[0].location;
     const params = [webtoonIdx, title, imgUrl];
-    
+
     const postEpisodeQuery = "INSERT INTO episode(webtoon_idx, title, img_url, views, date) VALUES(?, ?, ?, 0, now())";
-    db.queryParam_Parse(postEpisodeQuery, params, function(result){
+    db.queryParam_Parse(postEpisodeQuery, params, function (result) {
         if (!result) {
             res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_SELECT_FAIL));
         } else {
-            res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
+            let postCutsQuery = "INSERT INTO cut(episode_idx, img_url) VALUES";
+            req.files.cuts.forEach(function (item, index, array) {
+                postCutsQuery += `(${result.insertId}, '${item.location}'),`;
+            });
+            postCutsQuery = postCutsQuery.slice(0, postCutsQuery.length-1);
+            db.queryParam_Parse(postCutsQuery, params, function (result) {
+                if (!result) {
+                    res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_SELECT_FAIL));
+                } else {
+                    res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
+                }
+            });
         }
     });
 });
@@ -102,32 +113,6 @@ router.put('/:episodeIdx', upload.single('img'), (req, res) => {
     });
 });
 
-// 웹툰 수정
-router.put('/:webtoonIdx', upload.single('thumbnail'), (req, res) => {
-    const {webtoonIdx} = req.params;
-    const {name, title} = req.body;
-
-    // webtoonIdx가 없거나 name, title, thumbnail 전부 없으면 에러 응답
-    if(!webtoonIdx || (!name && !title && !req.thumbnail)){
-        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
-    }
-    
-    let putWebtoonQuery = "UPDATE webtoon SET ";
-    if(name) putWebtoonQuery+= ` name = ${name},`;
-    if(title) putWebtoonQuery+= ` title = ${title},`;
-    if(req.thumbnail) putWebtoonQuery+= ` img_url = ${req.thumbnail.location},`;
-    putWebtoonQuery = putWebtoonQuery.slice(0, putWebtoonQuery.length-1);
-    
-    putWebtoonQuery += " WHERE webtoon_idx = ?";
-    db.queryParam_Parse(putWebtoonQuery, [webtoonIdx], function(result){
-        if (!result) {
-            res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_SELECT_FAIL));
-        } else {
-            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
-        }
-    });
-});
-
 // 에피소드 삭제
 router.delete('/:episodeIdx',  async(req, res) => {
     const {episodeIdx} = req.params;
@@ -140,6 +125,31 @@ router.delete('/:episodeIdx',  async(req, res) => {
     } else {
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_DELETE_SUCCESS));
     }
+});
+
+// 컷 생성
+router.post('/', upload.single('img'), (req, res) => {
+    const {webtoonIdx, title} = req.body;
+
+    // webtoonIdx, title, comment, img 중 하나라도 없으면 에러 응답
+    if(!webtoonIdx || !title || !req.file){
+        console.log(`webtoonIdx : ${webtoonIdx}`);
+        console.log(`title : ${title}`);
+        console.log(`req.img : ${req.file}`);
+        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
+    }
+
+    const imgUrl = req.file.location;
+    const params = [webtoonIdx, title, imgUrl];
+    
+    const postEpisodeQuery = "INSERT INTO episode(webtoon_idx, title, img_url, views, date) VALUES(?, ?, ?, 0, now())";
+    db.queryParam_Parse(postEpisodeQuery, params, function(result){
+        if (!result) {
+            res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_SELECT_FAIL));
+        } else {
+            res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
+        }
+    });
 });
 
 module.exports = router;
