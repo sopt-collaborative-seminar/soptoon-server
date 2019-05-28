@@ -36,16 +36,50 @@ router.get('/main/:flag', async (req, res) => {
 });
 
 // 웹툰 생성
-router.post('/',  async(req, res) => {
+router.post('/', upload.single('thumbnail'), (req, res) => {
     const {name, title} = req.body;
-    // const thumbnail =
-});
 
+    // name, title, thumbnail 중 하나라도 없으면 에러 응답
+    if(!name || !title || !req.file){
+        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
+    }
+
+    const imgUrl = req.file.location;
+    const params = [title, imgUrl, name];
+    
+    const postWebtoonQuery = "INSERT INTO webtoon(title, thumbnail, is_finished, likes, name) VALUES(?, ?, false, 0, ?)";
+    db.queryParam_Parse(postWebtoonQuery, params, function(result){
+        if (!result) {
+            res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_SELECT_FAIL));
+        } else {
+            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
+        }
+    });
+});
 // 웹툰 수정
-router.put('/:webtoonIdx', async (req, res) => {
+router.put('/:webtoonIdx', upload.single('thumbnail'), (req, res) => {
     const {webtoonIdx} = req.params;
     const {name, title} = req.body;
-    // const thumbnail =
+
+    // webtoonIdx가 없거나 name, title, thumbnail 전부 없으면 에러 응답
+    if(!webtoonIdx || (!name && !title && !req.file)){
+        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
+    }
+    
+    let putWebtoonQuery = "UPDATE webtoon SET ";
+    if(name) putWebtoonQuery+= ` name = '${name}',`;
+    if(title) putWebtoonQuery+= ` title = '${title}',`;
+    if(req.file) putWebtoonQuery+= ` thumbnail = '${req.file.location}',`;
+    putWebtoonQuery = putWebtoonQuery.slice(0, putWebtoonQuery.length-1);
+    
+    putWebtoonQuery += " WHERE webtoon_idx = ?";
+    db.queryParam_Parse(putWebtoonQuery, [webtoonIdx], function(result){
+        if (!result) {
+            res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_SELECT_FAIL));
+        } else {
+            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
+        }
+    });
 });
 
 // 웹툰 삭제
@@ -53,7 +87,6 @@ router.delete('/:webtoonIdx',  async(req, res) => {
     const {webtoonIdx} = req.params;
     
     const deleteWebtoonQuery = "DELETE FROM webtoon WHERE webtoon_idx = ?";
-    console.log(deleteWebtoonQuery);
     const deleteWebtoonResult = await db.queryParam_Parse(deleteWebtoonQuery, [webtoonIdx]);
 
     if (!deleteWebtoonResult) {
@@ -96,8 +129,8 @@ router.post('/like',  async(req, res) => {
 });
 
 // 좋아요 취소
-router.delete('/:webtoonIdx/like/:userIdx',  async(req, res) => {
-    const {webtoonIdx, userIdx} = req.params;
+router.delete('/like',  async(req, res) => {
+    const {webtoonIdx, userIdx} = req.body;
     const params = [userIdx, webtoonIdx];
     
     const deleteLikeQuery = "DELETE FROM `like` WHERE user_idx = ? AND webtoon_idx = ?";
