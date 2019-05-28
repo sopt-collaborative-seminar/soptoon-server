@@ -36,7 +36,7 @@ module.exports = { // 두 개의 메소드 module화
             return result;
         }
     },
-    queryParam_Parse: async(inputquery, inputvalue) => {
+    queryParam_Parse: async(inputquery, inputvalue, cb) => {
         const query = inputquery;
         const value = inputvalue;
         let result;
@@ -50,6 +50,9 @@ module.exports = { // 두 개의 메소드 module화
             next(err);
         } finally {
             pool.releaseConnection(connection);
+            if(cb){
+                cb(result);
+            }
             return result;
         }
     },
