@@ -96,11 +96,9 @@ router.post('/like',  async(req, res) => {
 });
 
 // 좋아요 취소
-router.delete('/like',  async(req, res) => {
-    const {webtoonIdx, userIdx} = req.body;
-    console.log('delete test1');
+router.delete('/:webtoonIdx/like/:userIdx',  async(req, res) => {
+    const {webtoonIdx, userIdx} = req.params;
     const params = [userIdx, webtoonIdx];
-    console.log('delete test2');
     
     const deleteLikeQuery = "DELETE FROM `like` WHERE user_idx = ? AND webtoon_idx = ?";
     console.log(deleteLikeQuery);
