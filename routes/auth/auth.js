@@ -32,7 +32,7 @@ router.post('/signin', async (req, res) => {
                 // password, salt 제거
                 delete firstMembershipByIdResult.password;
                 delete firstMembershipByIdResult.salt;
-                res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.MEMBERSHIP_SELECT_SUCCESS, firstMembershipByIdResult));
+                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.MEMBERSHIP_SELECT_SUCCESS, firstMembershipByIdResult));
             }
         });
     }
@@ -64,7 +64,7 @@ router.post('/signup', async (req, res) => {
                 if (!insertMembershipResult) {
                     res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.MEMBERSHIP_INSERT_FAIL));
                 } else { //쿼리문이 성공했을 때
-                    res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.MEMBERSHIP_INSERT_SUCCESS));
+                    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.MEMBERSHIP_INSERT_SUCCESS));
                 }
             });
         });

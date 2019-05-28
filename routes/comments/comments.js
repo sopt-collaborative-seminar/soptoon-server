@@ -32,7 +32,7 @@ router.post('/', upload.single('img'), (req, res) => {
         if (!result) {
             res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_SELECT_FAIL));
         } else {
-            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
+            res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
         }
     });
 });

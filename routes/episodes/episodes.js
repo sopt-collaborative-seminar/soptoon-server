@@ -66,7 +66,7 @@ router.post('/', upload.single('img'), (req, res) => {
         if (!result) {
             res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_SELECT_FAIL));
         } else {
-            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
+            res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
         }
     });
 });
@@ -131,6 +131,15 @@ router.put('/:webtoonIdx', upload.single('thumbnail'), (req, res) => {
 // 에피소드 삭제
 router.delete('/:episodeIdx',  async(req, res) => {
     const {episodeIdx} = req.params;
+    
+    const deleteEpisodeQuery = "DELETE FROM episode WHERE episode_idx = ?";
+    const deleteEpisodeResult = await db.queryParam_Parse(deleteEpisodeQuery, [episodeIdx]);
+
+    if (!deleteEpisodeResult) {
+        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_DELETE_FAIL));
+    } else {
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_DELETE_SUCCESS));
+    }
 });
 
 module.exports = router;

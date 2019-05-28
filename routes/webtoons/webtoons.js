@@ -52,7 +52,7 @@ router.post('/', upload.single('thumbnail'), (req, res) => {
         if (!result) {
             res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_SELECT_FAIL));
         } else {
-            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
+            res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
         }
     });
 });
@@ -77,7 +77,11 @@ router.put('/:webtoonIdx', upload.single('thumbnail'), (req, res) => {
         if (!result) {
             res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_SELECT_FAIL));
         } else {
-            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
+            if(result.changedRows > 0){
+                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
+            }else{
+                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
+            }
         }
     });
 });
@@ -92,7 +96,7 @@ router.delete('/:webtoonIdx',  async(req, res) => {
     if (!deleteWebtoonResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_DELETE_FAIL));
     } else {
-        res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_DELETE_SUCCESS));
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_DELETE_SUCCESS));
     }
 });
 
@@ -109,7 +113,7 @@ router.get('/:webtoonIdx/like/:userIdx', async(req, res) => {
         res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.MEMBERSHIP_INSERT_FAIL));
     } else {
         const isExist = getIsLikedResult[0].isExist == 1 ? true : false;
-        res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.MEMBERSHIP_INSERT_SUCCESS, isExist));
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.MEMBERSHIP_INSERT_SUCCESS, isExist));
     }
 });
 
@@ -124,7 +128,7 @@ router.post('/like',  async(req, res) => {
     if (!postLikeResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.MEMBERSHIP_INSERT_FAIL));
     } else {
-        res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.MEMBERSHIP_INSERT_SUCCESS));
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.MEMBERSHIP_INSERT_SUCCESS));
     }
 });
 
@@ -140,7 +144,7 @@ router.delete('/like',  async(req, res) => {
     if (!deleteLikeResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_DELETE_FAIL));
     } else {
-        res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_DELETE_SUCCESS));
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_DELETE_SUCCESS));
     }
 });
 
