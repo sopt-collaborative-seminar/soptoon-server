@@ -15,9 +15,9 @@ router.get('/:episodeIdx', async(req, res) => {
     const getCommentsResult = await db.queryParam_Parse(getCommentsQuery, [episodeIdx]);
 
     if (!getCommentsResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_SELECT_FAIL));
+        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.COMMENT_SELECT_ERROR));
     } else {
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS, getCommentsResult));
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.COMMENT_SELECT_SUCCESS, getCommentsResult));
     }
 });
 
@@ -30,9 +30,9 @@ router.post('/', upload.single('img'), (req, res) => {
     const postCommentsQuery = "INSERT INTO comment(episode_idx, user_idx, comment, img_url) VALUES(?, ?, ?, ?)";
     const postCommentsResult = db.queryParam_Parse(postCommentsQuery, params, function(result){
         if (!result) {
-            res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_SELECT_FAIL));
+            res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.COMMENT_INSERT_ERROR));
         } else {
-            res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
+            res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.COMMENT_INSERT_SUCCESS));
         }
     });
 });

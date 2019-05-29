@@ -15,9 +15,9 @@ router.get('/webtoon/:webtoonIdx', async(req, res) => {
     const getEpisodeResult = await db.queryParam_Parse(getEpisodeQuery, [webtoonIdx]);
 
     if (!getEpisodeResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_SELECT_FAIL));
+        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.EPISODE_SELECT_ERROR));
     } else {
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS, getEpisodeResult));
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, getEpisodeResult));
     }
 });
 
@@ -35,19 +35,19 @@ router.get('/:episodeIdx', async(req, res) => {
     const getCutsResult = await db.queryParam_Parse(getCutsQuery, [episodeIdx]);
     
     if (!getEpisodeResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_SELECT_FAIL));
+        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.EPISODE_SELECT_ERROR));
     } else {
         if(result.length > 0){
             result[0].cuts = getCutsResult.map(e => e.img_url);
-            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS, result[0]));
+            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result[0]));
         }else{ // 존재하지 않음
-            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
+            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_ERROR));
         }
     }
 });
 
 // 에피소드 생성
-router.post('/', upload.fields([{name: 'img'}, {name: 'cuts'}]), (req, res) => {
+router.post('/', upload.fields([{name: 'img'}, {name: 'cuts', maxCount:10}]), (req, res) => {
     const {webtoonIdx,title} = req.body;
 
     // webtoonIdx, title, comment, img, cuts 중 하나라도 없으면 에러 응답
@@ -64,18 +64,19 @@ router.post('/', upload.fields([{name: 'img'}, {name: 'cuts'}]), (req, res) => {
     const postEpisodeQuery = "INSERT INTO episode(webtoon_idx, title, img_url, views, date) VALUES(?, ?, ?, 0, now())";
     db.queryParam_Parse(postEpisodeQuery, params, function (result) {
         if (!result) {
-            res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_SELECT_FAIL));
+            res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.EPISODE_INSERT_ERROR));
         } else {
             let postCutsQuery = "INSERT INTO cut(episode_idx, img_url) VALUES";
+            console.log(req.files)
             req.files.cuts.forEach(function (item, index, array) {
                 postCutsQuery += `(${result.insertId}, '${item.location}'),`;
             });
             postCutsQuery = postCutsQuery.slice(0, postCutsQuery.length-1);
             db.queryParam_Parse(postCutsQuery, params, function (result) {
                 if (!result) {
-                    res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_SELECT_FAIL));
+                    res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.EPISODE_INSERT_ERROR));
                 } else {
-                    res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
+                    res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_INSERT_SUCCESS));
                 }
             });
         }
@@ -102,28 +103,32 @@ router.put('/:episodeIdx', upload.single('img'), (req, res) => {
 
     db.queryParam_Parse(putEpisodeQuery, [episodeIdx], function(result){
         if (!result) {
-            res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_SELECT_FAIL));
+            res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.EPISODE_UPDATE_ERROR));
         } else {
             if(result.changedRows > 0){
-                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
+                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_UPDATE_SUCCESS));
             }else{
-                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
+                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_UPDATE_NOTHING));
             }
         }
     });
 });
 
 // 에피소드 삭제
-router.delete('/:episodeIdx',  async(req, res) => {
-    const {episodeIdx} = req.params;
-    
+router.delete('/:episodeIdx', async (req, res) => {
+    const { episodeIdx } = req.params;
+
     const deleteEpisodeQuery = "DELETE FROM episode WHERE episode_idx = ?";
     const deleteEpisodeResult = await db.queryParam_Parse(deleteEpisodeQuery, [episodeIdx]);
 
     if (!deleteEpisodeResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_DELETE_FAIL));
+        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.EPISODE_DELETE_ERROR));
     } else {
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_DELETE_SUCCESS));
+        if (deleteEpisodeResult.affectedRows > 0) { // 바뀐 row가 없다면
+            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_DELETE_SUCCESS));
+        } else { // 바뀐 row가 있다면
+            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_DELETE_NOTHING));
+        }
     }
 });
 
@@ -145,9 +150,9 @@ router.post('/', upload.single('img'), (req, res) => {
     const postEpisodeQuery = "INSERT INTO episode(webtoon_idx, title, img_url, views, date) VALUES(?, ?, ?, 0, now())";
     db.queryParam_Parse(postEpisodeQuery, params, function(result){
         if (!result) {
-            res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BOARD_SELECT_FAIL));
+            res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.EPISODE_INSERT_ERROR));
         } else {
-            res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_SELECT_SUCCESS));
+            res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_INSERT_SUCCESS));
         }
     });
 });
