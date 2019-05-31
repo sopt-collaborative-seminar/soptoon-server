@@ -15,7 +15,7 @@ router.get('/:episodeIdx', async(req, res) => {
     const getCommentsResult = await db.queryParam_Parse(getCommentsQuery, [episodeIdx]);
 
     if (!getCommentsResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.COMMENT_SELECT_ERROR));
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.COMMENT_SELECT_ERROR));
     } else {
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.COMMENT_SELECT_SUCCESS, getCommentsResult));
     }
@@ -27,13 +27,22 @@ router.post('/', upload.single('img'), (req, res) => {
     const imgUrl = req.file.location;
     const params = [episodeIdx, userIdx, comment, imgUrl];
     
-    const postCommentsQuery = "INSERT INTO comment(episode_idx, user_idx, comment, img_url) VALUES(?, ?, ?, ?)";
-    const postCommentsResult = db.queryParam_Parse(postCommentsQuery, params, function(result){
-        if (!result) {
-            res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.COMMENT_INSERT_ERROR));
-        } else {
-            res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.COMMENT_INSERT_SUCCESS));
+    const getEpisodeQuery = "SELECT * FROM episode WHERE episode_idx = ?";
+    const getEpisodeResult = db.queryParam_Parse(getEpisodeQuery, [episodeIdx]);
+
+    getEpisodeResult.then(()=>{
+        if(!getEpisodeResult || getEpisodeResult.length < 1){
+            res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.EPISODE_SELECT_NOTHING + `: ${episodeIdx}`));
         }
+    
+        const postCommentsQuery = "INSERT INTO comment(episode_idx, user_idx, comment, img_url) VALUES(?, ?, ?, ?)";
+        const postCommentsResult = db.queryParam_Parse(postCommentsQuery, params, function(result){
+            if (!result) {
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.COMMENT_INSERT_ERROR));
+            } else {
+                res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.COMMENT_INSERT_SUCCESS));
+            }
+        });
     });
 });
 

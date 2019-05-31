@@ -13,7 +13,7 @@ router.get('/', async(req, res) => {
     const getBannersResult = await db.queryParam_None(getBannersQuery);
 
     if (!getBannersResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.BANNER_SELECT_ERROR));
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BANNER_SELECT_ERROR));
     } else {
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BANNER_SELECT_SUCCESS, getBannersResult));
     }

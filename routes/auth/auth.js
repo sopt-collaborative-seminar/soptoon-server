@@ -20,14 +20,14 @@ router.post('/signin', async (req, res) => {
     const getMembershipByIdResult = await db.queryParam_Parse(getMembershipByIdQuery, [id]);
 
     if (!getMembershipByIdResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.MEMBERSHIP_SELECT_FAIL));
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.MEMBERSHIP_SELECT_FAIL));
     } else if (getMembershipByIdResult.length === 0) {
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.SIGN_IN_FAIL));
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.SIGN_IN_FAIL));
     } else { //쿼리문이 성공했을 때
         const firstMembershipByIdResult = getMembershipByIdResult[0];
         encrypt.getHashedPassword(password, firstMembershipByIdResult.salt, res, async (hashedPassword) => {
             if (firstMembershipByIdResult.password !== hashedPassword) {
-                res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.SIGN_IN_FAIL));
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.SIGN_IN_FAIL));
             } else { // 로그인 정보가 일치할 때
                 // password, salt 제거
                 delete firstMembershipByIdResult.password;
@@ -50,9 +50,9 @@ router.post('/signup', async (req, res) => {
     const getMembershipResult = await db.queryParam_Parse(getMembershipQuery, [id]);
 
     if(!getMembershipResult){
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.MEMBERSHIP_INSERT_FAIL));
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.MEMBERSHIP_INSERT_FAIL));
     } else if (getMembershipResult.length > 0) {
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.MEMBERSHIP_INSERT_DUPLICATE));
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.MEMBERSHIP_INSERT_DUPLICATE));
     } else {
         encrypt.getSalt(res, async (salt) => {
             encrypt.getHashedPassword(password, salt, res, async (hashedPassword) => {
@@ -62,7 +62,7 @@ router.post('/signup', async (req, res) => {
                 const insertMembershipResult = await db.queryParam_Parse(insertMembershipQuery, params);
 
                 if (!insertMembershipResult) {
-                    res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.MEMBERSHIP_INSERT_FAIL));
+                    res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.MEMBERSHIP_INSERT_FAIL));
                 } else { //쿼리문이 성공했을 때
                     res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.MEMBERSHIP_INSERT_SUCCESS));
                 }

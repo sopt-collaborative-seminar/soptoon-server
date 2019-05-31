@@ -15,7 +15,7 @@ router.get('/webtoon/:webtoonIdx', async(req, res) => {
     const getEpisodeResult = await db.queryParam_Parse(getEpisodeQuery, [webtoonIdx]);
 
     if (!getEpisodeResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.EPISODE_SELECT_ERROR));
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
     } else {
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, getEpisodeResult));
     }
@@ -35,7 +35,7 @@ router.get('/:episodeIdx', async(req, res) => {
     const getCutsResult = await db.queryParam_Parse(getCutsQuery, [episodeIdx]);
     
     if (!getEpisodeResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.EPISODE_SELECT_ERROR));
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
     } else {
         if(result.length > 0){
             result[0].cuts = getCutsResult.map(e => e.img_url);
@@ -58,28 +58,42 @@ router.post('/', upload.fields([{name: 'img'}, {name: 'cuts', maxCount:10}]), (r
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
     }
 
-    const imgUrl = req.files.img[0].location;
-    const params = [webtoonIdx, title, imgUrl];
+    const getWebtoonQuery = "SELECT * FROM webtoon WHERE webtoon_idx = ?";
+    const getWebtoonResult = db.queryParam_Parse(getWebtoonQuery, [webtoonIdx]);
 
-    const postEpisodeQuery = "INSERT INTO episode(webtoon_idx, title, img_url, views, date) VALUES(?, ?, ?, 0, now())";
-    db.queryParam_Parse(postEpisodeQuery, params, function (result) {
-        if (!result) {
-            res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.EPISODE_INSERT_ERROR));
-        } else {
-            let postCutsQuery = "INSERT INTO cut(episode_idx, img_url) VALUES";
-            console.log(req.files)
-            req.files.cuts.forEach(function (item, index, array) {
-                postCutsQuery += `(${result.insertId}, '${item.location}'),`;
-            });
-            postCutsQuery = postCutsQuery.slice(0, postCutsQuery.length-1);
-            db.queryParam_Parse(postCutsQuery, params, function (result) {
-                if (!result) {
-                    res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.EPISODE_INSERT_ERROR));
-                } else {
-                    res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_INSERT_SUCCESS));
-                }
-            });
+    getWebtoonResult.then(()=>{
+        if(!getWebtoonResult || getWebtoonResult.length < 1){
+            res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.WEBTOON_SELECT_NOTHING + `: ${webtoonIdx}`));
         }
+        console.log('################episodes##################');
+    
+        if(req.files && req.files.cuts){
+            console.log(req.files.cuts);
+        }
+        console.log('################episodes##################');
+    
+        const imgUrl = req.files.img[0].location;
+        const params = [webtoonIdx, title, imgUrl];
+    
+        const postEpisodeQuery = "INSERT INTO episode(webtoon_idx, title, img_url, views, date) VALUES(?, ?, ?, 0, now())";
+        db.queryParam_Parse(postEpisodeQuery, params, function (result) {
+            if (!result) {
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_INSERT_ERROR));
+            } else {
+                let postCutsQuery = "INSERT INTO cut(episode_idx, img_url) VALUES";
+                req.files.cuts.forEach(function (item, index, array) {
+                    postCutsQuery += `(${result.insertId}, '${item.location}'),`;
+                });
+                postCutsQuery = postCutsQuery.slice(0, postCutsQuery.length-1);
+                db.queryParam_Parse(postCutsQuery, params, function (result) {
+                    if (!result) {
+                        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_INSERT_ERROR));
+                    } else {
+                        res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_INSERT_SUCCESS));
+                    }
+                });
+            }
+        });
     });
 });
 
@@ -103,12 +117,12 @@ router.put('/:episodeIdx', upload.single('img'), (req, res) => {
 
     db.queryParam_Parse(putEpisodeQuery, [episodeIdx], function(result){
         if (!result) {
-            res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.EPISODE_UPDATE_ERROR));
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_UPDATE_ERROR));
         } else {
             if(result.changedRows > 0){
                 res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_UPDATE_SUCCESS));
             }else{
-                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_UPDATE_NOTHING));
+                res.status(200).send(defaultRes.successFalse(statusCode.OK, resMessage.EPISODE_UPDATE_NOTHING));
             }
         }
     });
@@ -122,7 +136,7 @@ router.delete('/:episodeIdx', async (req, res) => {
     const deleteEpisodeResult = await db.queryParam_Parse(deleteEpisodeQuery, [episodeIdx]);
 
     if (!deleteEpisodeResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.EPISODE_DELETE_ERROR));
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_DELETE_ERROR));
     } else {
         if (deleteEpisodeResult.affectedRows > 0) { // 바뀐 row가 없다면
             res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_DELETE_SUCCESS));
@@ -150,7 +164,7 @@ router.post('/', upload.single('img'), (req, res) => {
     const postEpisodeQuery = "INSERT INTO episode(webtoon_idx, title, img_url, views, date) VALUES(?, ?, ?, 0, now())";
     db.queryParam_Parse(postEpisodeQuery, params, function(result){
         if (!result) {
-            res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.EPISODE_INSERT_ERROR));
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_INSERT_ERROR));
         } else {
             res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_INSERT_SUCCESS));
         }

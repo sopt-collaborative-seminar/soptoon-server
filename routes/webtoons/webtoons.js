@@ -29,7 +29,7 @@ router.get('/main/:flag', async (req, res) => {
 
     //쿼리문의 결과가 실패이면 null을 반환한다
     if (!getWebtoonResult) { //쿼리문이 실패했을 때
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.WEBTOON_SELECT_ERROR));
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.WEBTOON_SELECT_ERROR));
     } else { //쿼리문이 성공했을 때
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.WEBTOON_SELECT_SUCCESS, getWebtoonResult));
     }
@@ -50,7 +50,7 @@ router.post('/', upload.single('thumbnail'), (req, res) => {
     const postWebtoonQuery = "INSERT INTO webtoon(title, thumbnail, is_finished, likes, name) VALUES(?, ?, false, 0, ?)";
     db.queryParam_Parse(postWebtoonQuery, params, function(result){
         if (!result) {
-            res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.WEBTOON_INSERT_ERROR));
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.WEBTOON_INSERT_ERROR));
         } else {
             res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.WEBTOON_INSERT_SUCCESS));
         }
@@ -75,7 +75,7 @@ router.put('/:webtoonIdx', upload.single('thumbnail'), (req, res) => {
     putWebtoonQuery += " WHERE webtoon_idx = ?";
     db.queryParam_Parse(putWebtoonQuery, [webtoonIdx], function(result){
         if (!result) {
-            res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.WEBTOON_UPDATE_ERROR));
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.WEBTOON_UPDATE_ERROR));
         } else {
             if(result.changedRows > 0){
                 res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.WEBTOON_UPDATE_SUCCESS));
@@ -94,12 +94,12 @@ router.delete('/:webtoonIdx',  async(req, res) => {
     const deleteWebtoonResult = await db.queryParam_Parse(deleteWebtoonQuery, [webtoonIdx]);
 
     if (!deleteWebtoonResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.WEBTOON_DELETE_ERROR));
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.WEBTOON_DELETE_ERROR));
     } else {
         if(deleteWebtoonResult.affectedRows > 0){
             res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.WEBTOON_DELETE_SUCCESS));
         }else{
-            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.WEBTOON_DELETE_NOTHING));
+            res.status(200).send(defaultRes.successFalse(statusCode.OK, resMessage.WEBTOON_DELETE_NOTHING));
         }
     }
 });
@@ -114,7 +114,7 @@ router.get('/:webtoonIdx/like/:userIdx', async(req, res) => {
     const getIsLikedResult = await db.queryParam_Parse(getIsLikedQuery, params);
 
     if (!getIsLikedResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.WEBTOON_LIKE_SELECT_ERROR));
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.WEBTOON_LIKE_SELECT_ERROR));
     } else {
         const isExist = getIsLikedResult[0].isExist == 1 ? true : false;
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.WEBTOON_LIKE_SELECT_SUCCESS, isExist));
@@ -125,13 +125,20 @@ router.get('/:webtoonIdx/like/:userIdx', async(req, res) => {
 router.post('/like',  async(req, res) => {
     const {webtoonIdx, userIdx} = req.body;
     const params = [userIdx, webtoonIdx];
-    
+
+    // just check the
+    const getWebtoonQuery = "SELECT * FROM webtoon w, user u WHERE webtoon_idx = ?";
+    const getWebtoonResult = await db.queryParam_Parse(getWebtoonQuery, [webtoonIdx]);
+
+    if(!getWebtoonResult || getWebtoonResult.length < 1){
+        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.WEBTOON_SELECT_NOTHING + `: ${webtoonIdx}`));
+    }
+
     const postLikeQuery = "INSERT INTO `like`(user_idx, webtoon_idx) VALUES(?, ?)";
     const postLikeResult = await db.queryParam_Parse(postLikeQuery, params);
-    console.log(postLikeQuery);
     
     if (!postLikeResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.MEMBERSHIP_INSERT_FAIL));
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.MEMBERSHIP_INSERT_FAIL));
         return;
     } 
 
@@ -139,7 +146,7 @@ router.post('/like',  async(req, res) => {
     const updateWebtoonResult = await db.queryParam_Parse(updateWebtoonQuery, [webtoonIdx]);
 
     if (!updateWebtoonResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.WEBTOON_LIKE_INSERT_ERROR));
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.WEBTOON_LIKE_INSERT_ERROR));
     } else {
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.WEBTOON_LIKE_INSERT_SUCCESS));
     }
@@ -153,21 +160,20 @@ router.delete('/:webtoonIdx/like/:userIdx',  async(req, res) => {
     const deleteLikeQuery = "DELETE FROM `like` WHERE user_idx = ? AND webtoon_idx = ?";
     const deleteLikeResult = await db.queryParam_Parse(deleteLikeQuery, params);
 
-    console.log('delete : '+deleteLikeQuery);
     if (!deleteLikeResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.WEBTOON_LIKE_DELETE_NOTHING));
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.WEBTOON_LIKE_DELETE_NOTHING));
     } 
 
     const updateWebtoonQuery = "UPDATE webtoon SET likes = likes - 1 WHERE webtoon_idx = ?";
     const updateWebtoonResult = await db.queryParam_Parse(updateWebtoonQuery, [webtoonIdx]);
 
     if (!updateWebtoonResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.WEBTOON_LIKE_DELETE_ERROR));
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.WEBTOON_LIKE_DELETE_ERROR));
     } else {
-        if(updateWebtoonResult.affectedRows>0){
+        if (updateWebtoonResult.affectedRows > 0) {
             res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.WEBTOON_LIKE_DELETE_SUCCESS));
-        }else{
-            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.WEBTOON_LIKE_DELETE_NOTHING));
+        } else {
+            res.status(200).send(defaultRes.successFalse(statusCode.OK, resMessage.WEBTOON_LIKE_DELETE_NOTHING));
         }
     }
 });
