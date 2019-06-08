@@ -47,15 +47,50 @@ router.post('/', upload.single('img'), (req, res) => {
 });
 
 // 댓글 수정
-router.put('/:commentIdx',  async(req, res) => {
+router.put('/:commentIdx', upload.single('img'), (req, res) => {
     const {commentIdx} = req.params;
     const {userIdx, comment} = req.body;
-    // const img;
+
+    // commentIdx가 없거나 userIdx, req.file 전부 없으면 에러 응답
+    if(!commentIdx || (!userIdx && !req.file)){
+        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
+    }
+    
+    let putEpisodeQuery = "UPDATE comment SET ";
+    if(comment) putEpisodeQuery += ` comment = '${comment}',`;
+    if(req.file) putEpisodeQuery += ` img_url = '${req.file.location}',`;
+    putEpisodeQuery = putEpisodeQuery.slice(0, putEpisodeQuery.length-1);
+    putEpisodeQuery += " WHERE comment_idx = ? AND user_idx = ?";
+
+    db.queryParam_Parse(putEpisodeQuery, [commentIdx, userIdx], function(result){
+        if (!result) {
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.COMMENT_UPDATE_ERROR));
+        } else {
+            if(result.changedRows > 0){
+                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.COMMENT_UPDATE_SUCCESS));
+            }else{
+                res.status(200).send(defaultRes.successFalse(statusCode.OK, resMessage.COMMENT_UPDATE_NOTHING));
+            }
+        }
+    });
 });
 
 // 댓글 삭제
 router.delete('/:commentIdx',  async(req, res) => {
     const {commentIdx} = req.params;
+    
+    const deleteCommentQuery = "DELETE FROM comment WHERE comment_idx = ?";
+    const deleteCommentResult = await db.queryParam_Parse(deleteCommentQuery, [commentIdx]);
+
+    if (!deleteCommentResult) {
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.COMMENT_DELETE_ERROR));
+    } else {
+        if(deleteCommentResult.affectedRows > 0){
+            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.COMMENT_DELETE_SUCCESS));
+        }else{
+            res.status(200).send(defaultRes.successFalse(statusCode.OK, resMessage.COMMENT_DELETE_NOTHING));
+        }
+    }
 });
 
 module.exports = router;

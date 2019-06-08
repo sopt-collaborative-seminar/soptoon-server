@@ -65,12 +65,6 @@ router.post('/', upload.fields([{name: 'img'}, {name: 'cuts', maxCount:10}]), (r
         if(!getWebtoonResult || getWebtoonResult.length < 1){
             res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.WEBTOON_SELECT_NOTHING + `: ${webtoonIdx}`));
         }
-        console.log('################episodes##################');
-    
-        if(req.files && req.files.cuts){
-            console.log(req.files.cuts);
-        }
-        console.log('################episodes##################');
     
         const imgUrl = req.files.img[0].location;
         const params = [webtoonIdx, title, imgUrl];
