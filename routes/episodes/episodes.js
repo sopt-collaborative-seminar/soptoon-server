@@ -6,6 +6,7 @@ const defaultRes = require('../../module/utils');
 const statusCode = require('../../module/statusCode');
 const resMessage = require('../../module/responseMessage');
 const db = require('../../module/pool');
+const authUtil = require('../../module/authUtils');
 
 // 에피소드 리스트 조회
 router.get('/webtoon/:webtoonIdx', async(req, res) => {
@@ -47,7 +48,7 @@ router.get('/:episodeIdx', async(req, res) => {
 });
 
 // 에피소드 생성
-router.post('/', upload.fields([{name: 'img'}, {name: 'cuts', maxCount:10}]), (req, res) => {
+router.post('/', authUtil.isAdmin, upload.fields([{name: 'img'}, {name: 'cuts', maxCount:10}]), (req, res) => {
     const {webtoonIdx,title} = req.body;
 
     // webtoonIdx, title, comment, img, cuts 중 하나라도 없으면 에러 응답
@@ -92,7 +93,7 @@ router.post('/', upload.fields([{name: 'img'}, {name: 'cuts', maxCount:10}]), (r
 });
 
 // 에피소드 수정
-router.put('/:episodeIdx', upload.single('img'), (req, res) => {
+router.put('/:episodeIdx', authUtil.isAdmin, upload.single('img'), (req, res) => {
     const {episodeIdx} = req.params;
     const {title} = req.body;
 
@@ -123,7 +124,7 @@ router.put('/:episodeIdx', upload.single('img'), (req, res) => {
 });
 
 // 에피소드 삭제
-router.delete('/:episodeIdx', async (req, res) => {
+router.delete('/:episodeIdx', authUtil.isAdmin, async (req, res) => {
     const { episodeIdx } = req.params;
 
     const deleteEpisodeQuery = "DELETE FROM episode WHERE episode_idx = ?";
@@ -141,7 +142,7 @@ router.delete('/:episodeIdx', async (req, res) => {
 });
 
 // 컷 생성
-router.post('/', upload.single('img'), (req, res) => {
+router.post('/', authUtil.isAdmin, upload.single('img'), (req, res) => {
     const {webtoonIdx, title} = req.body;
 
     // webtoonIdx, title, comment, img 중 하나라도 없으면 에러 응답

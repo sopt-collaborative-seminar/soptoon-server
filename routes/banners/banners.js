@@ -6,6 +6,7 @@ const defaultRes = require('../../module/utils');
 const statusCode = require('../../module/statusCode');
 const resMessage = require('../../module/responseMessage');
 const db = require('../../module/pool');
+const authUtil = require('../../module/authUtils');
 
 // 메인화면 베너 이미지 조회
 router.get('/', async(req, res) => {
@@ -20,12 +21,14 @@ router.get('/', async(req, res) => {
 });
 
 // 메인화면 베너 이미지 생성
-router.post('/',  async(req, res) => {
+router.post('/', authUtil.isAdmin, async(req, res) => {
     // const {img} = req.body;
+
+    res.status(200).send(defaultRes.successFalse(statusCode.OK, "배너 이미지 생성 완료! (미구현)"));
 });
 
 // 메인화면 베너 이미지 수정
-router.put('/:bannerIdx', upload.single('img'), (req, res) => {
+router.put('/:bannerIdx', authUtil.isAdmin, upload.single('img'), (req, res) => {
     const {bannerIdx} = req.params;
 
     // commentIdx가 없거나 req.file이 없으면 에러 응답
@@ -52,7 +55,7 @@ router.put('/:bannerIdx', upload.single('img'), (req, res) => {
 });
 
 // 메인화면 베너 이미지 삭제
-router.delete('/:bannerIdx',  async(req, res) => {
+router.delete('/:bannerIdx', authUtil.isAdmin,  async(req, res) => {
     const {bannerIdx} = req.params;
     
     const deleteBannerQuery = "DELETE FROM banner WHERE banner_idx = ?";

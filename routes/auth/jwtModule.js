@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 
 const utils = require('../../module/utils');
-const authUtil = require('../../module/utils/authUtils');
+const authUtil = require('../../module/authUtils');
 const resMessage = require('../../module/responseMessage');
 const statusCode = require('../../module/statusCode');
 

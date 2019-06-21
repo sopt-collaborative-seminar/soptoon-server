@@ -8,6 +8,8 @@ const resMessage = require('../../module/responseMessage');
 const encrypt = require('../../module/encrypt');
 const db = require('../../module/pool');
 const moment = require('moment');
+const authUtil = require('../../module/authUtils');
+const jwtUtil = require('../../module/jwt');
 
 router.post('/signin', async (req, res) => {
     const {id, password} = req.body;
@@ -26,13 +28,19 @@ router.post('/signin', async (req, res) => {
     } else { //쿼리문이 성공했을 때
         const firstMembershipByIdResult = getMembershipByIdResult[0];
         encrypt.getHashedPassword(password, firstMembershipByIdResult.salt, res, async (hashedPassword) => {
+            
             if (firstMembershipByIdResult.password !== hashedPassword) {
+                // 비밀번호가 틀렸을 경우
                 res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.SIGN_IN_FAIL));
-            } else { // 로그인 정보가 일치할 때
+            } else { 
+                // 로그인 정보가 일치할 때
                 // password, salt 제거
                 delete firstMembershipByIdResult.password;
                 delete firstMembershipByIdResult.salt;
-                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.MEMBERSHIP_SELECT_SUCCESS, firstMembershipByIdResult));
+
+                // 토큰 발급
+                const jwtToken = jwtUtil.sign(firstMembershipByIdResult);
+                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATE_TOKEN, { "token" : jwtToken}));
             }
         });
     }

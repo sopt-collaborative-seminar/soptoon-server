@@ -6,6 +6,7 @@ const defaultRes = require('../../module/utils');
 const statusCode = require('../../module/statusCode');
 const resMessage = require('../../module/responseMessage');
 const db = require('../../module/pool');
+const authUtil = require('../../module/authUtils');
 
 // 특정 에피소드의 댓글 조회
 router.get('/:episodeIdx', async(req, res) => {
@@ -22,8 +23,9 @@ router.get('/:episodeIdx', async(req, res) => {
 });
 
 // 댓글 작성
-router.post('/', upload.single('img'), (req, res) => {
-    const {episodeIdx, userIdx, comment} = req.body;
+router.post('/', authUtil.isLoggedin, upload.single('img'), (req, res) => {
+    const userIdx = req.decoded.user_idx;
+    const {episodeIdx, comment} = req.body;
     const imgUrl = req.file.location;
     const params = [episodeIdx, userIdx, comment, imgUrl];
     
@@ -47,9 +49,11 @@ router.post('/', upload.single('img'), (req, res) => {
 });
 
 // 댓글 수정
-router.put('/:commentIdx', upload.single('img'), (req, res) => {
+router.put('/:commentIdx', authUtil.isCommentWriter, upload.single('img'), (req, res) => {
+    const userIdx = req.decoded.user_idx;
     const {commentIdx} = req.params;
-    const {userIdx, comment} = req.body;
+    const {comment} = req.body;
+    const params = [commentIdx, userIdx];
 
     // commentIdx가 없거나 userIdx, req.file 전부 없으면 에러 응답
     if(!commentIdx || (!userIdx && !req.file)){
@@ -62,7 +66,7 @@ router.put('/:commentIdx', upload.single('img'), (req, res) => {
     putEpisodeQuery = putEpisodeQuery.slice(0, putEpisodeQuery.length-1);
     putEpisodeQuery += " WHERE comment_idx = ? AND user_idx = ?";
 
-    db.queryParam_Parse(putEpisodeQuery, [commentIdx, userIdx], function(result){
+    db.queryParam_Parse(putEpisodeQuery, params, function(result){
         if (!result) {
             res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.COMMENT_UPDATE_ERROR));
         } else {
@@ -76,7 +80,7 @@ router.put('/:commentIdx', upload.single('img'), (req, res) => {
 });
 
 // 댓글 삭제
-router.delete('/:commentIdx',  async(req, res) => {
+router.delete('/:commentIdx', authUtil.isCommentWriter,  async(req, res) => {
     const {commentIdx} = req.params;
     
     const deleteCommentQuery = "DELETE FROM comment WHERE comment_idx = ?";

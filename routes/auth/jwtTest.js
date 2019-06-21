@@ -1,10 +1,10 @@
 var express = require('express');
 var router = express.Router();
 
-const utils = require('../../module/utils/utils');
-const authUtil = require('../../module/utils/authUtils');
-const resMessage = require('../../module/utils/responseMessage');
-const statusCode = require('../../module/utils/statusCode');
+const utils = require('../../module/utils');
+const authUtil = require('../../module/authUtils');
+const resMessage = require('../../module/responseMessage');
+const statusCode = require('../../module/statusCode');
 
 const jwt = require('jsonwebtoken');
 const secretOrPrivateKey = "jwtSecretKey!";

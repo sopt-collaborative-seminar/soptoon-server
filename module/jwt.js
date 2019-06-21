@@ -1,22 +1,24 @@
 var randtoken = require('rand-token');
 const jwt = require('jsonwebtoken');
 const secretOrPrivateKey = "jwtSecretKey!";
+// 원래 expiresIn은 30분이나 1시간으로 잡는게 적당하지만,
+// 실습이니 그냥 14일로 잡음
 const options = {
     algorithm: "HS256",
-    expiresIn: "1h",
-    issuer: "genie"
+    expiresIn: "14d",
+    issuer: "yang"
 };
 
 const refreshOptions = {
     algorithm: "HS256",
-    expiresIn: "24h * 14",
-    issuer: "genie"
+    expiresIn: "28d",
+    issuer: "yang"
 };
 
 module.exports = {
     sign: (user) => {
         const payload = {
-            idx: user.idx,
+            user_idx: user.user_idx,
             grade: user.grade,
             name: user.name
         };
@@ -49,7 +51,7 @@ module.exports = {
     },
     refresh: (user) => {
         const payload = {
-            idx: user.idx,
+            user_idx: user.user_idx,
             grade: user.grade,
             name: user.name
         };
